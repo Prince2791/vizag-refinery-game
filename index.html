@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vizag Coastal Refinery: Process Costing + ABC Game</title>
+  <style>
+    :root{
+      --bg:#f3f6fb; --card:#fff; --ink:#111827; --muted:#5b6475; --line:#dbe3ef;
+      --accent:#173b7a; --accent2:#0f766e; --warn:#9a3412; --danger:#9f1239; --good:#166534;
+      --soft:#eef4ff; --soft2:#ecfdf5; --shadow:0 14px 36px rgba(21,31,55,.10);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+      background:
+        radial-gradient(circle at top left,rgba(23,59,122,.12),transparent 35%),
+        radial-gradient(circle at bottom right,rgba(15,118,110,.12),transparent 33%),
+        var(--bg);
+      color:var(--ink); line-height:1.5;
+    }
+    .app{max-width:1240px;margin:auto;padding:28px 18px 44px}
+    .top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:18px}
+    .kicker{font-size:13px;font-weight:900;color:var(--accent2);letter-spacing:.09em;text-transform:uppercase}
+    h1{margin:0;font-size:clamp(30px,4vw,50px);letter-spacing:-.045em;line-height:1.03}
+    h2{margin:0 0 12px;font-size:clamp(24px,3vw,34px);letter-spacing:-.03em}
+    h3{margin:0 0 8px;font-size:18px}
+    p{margin:0 0 12px}.small{font-size:13px;color:var(--muted)}
+    .pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 12px;color:var(--muted);font-size:13px;white-space:nowrap}
+    .layout{display:grid;grid-template-columns:290px 1fr;gap:18px;align-items:start}
+    .side,.screen,.panel{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
+    .side{padding:16px;position:sticky;top:16px}
+    .screen{display:none;min-height:680px;padding:clamp(18px,3vw,32px)}
+    .screen.active{display:block}
+    .progress{display:grid;gap:9px;margin:14px 0}
+    .step{display:grid;grid-template-columns:30px 1fr;gap:9px;align-items:center;color:var(--muted);font-size:13px}
+    .dot{height:30px;width:30px;border-radius:50%;display:grid;place-items:center;background:#fff;border:1px solid var(--line);font-weight:900}
+    .step.active .dot{background:var(--accent);border-color:var(--accent);color:#fff}
+    .step.done .dot{background:var(--accent2);border-color:var(--accent2);color:#fff}
+    .scorebox{border:1px solid var(--line);border-radius:16px;background:#fbfcff;padding:13px;margin-top:12px}
+    .scorebig{font-size:34px;font-weight:950;letter-spacing:-.05em;color:var(--accent)}
+    .meter{height:10px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin-top:8px}.bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:.3s}
+    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}.panel{padding:18px;box-shadow:none}
+    .callout{border-left:5px solid var(--accent);background:var(--soft);border-radius:14px;padding:14px 16px;margin:14px 0}
+    .callout.warn{border-left-color:var(--warn);background:#fff7ed}.callout.good{border-left-color:var(--good);background:#f0fdf4}
+    .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    label{display:block;font-weight:800;margin:0 0 6px;font-size:14px}
+    input,select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;padding:11px 12px;font-size:15px;color:var(--ink)}
+    textarea{min-height:88px;resize:vertical}
+    button{border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:900;padding:12px 16px;cursor:pointer;box-shadow:0 8px 18px rgba(23,59,122,.16)}
+    button.secondary{background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+    .btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+    .choice{border:1px solid var(--line);border-radius:17px;background:#fff;padding:15px;cursor:pointer;min-height:112px;transition:.12s;display:flex;flex-direction:column;gap:6px}
+    .choice:hover{transform:translateY(-2px);border-color:rgba(23,59,122,.45)}
+    .choice.selected{background:#eef4ff;border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+    .choice.correct{background:#f0fdf4;border-color:var(--good)}.choice.wrong{background:#fff1f2;border-color:var(--danger)}
+    .tag{display:inline-flex;width:fit-content;border-radius:999px;background:#edf2f7;color:var(--muted);font-weight:900;font-size:12px;padding:4px 8px}
+    .feedback{display:none;margin-top:14px;border:1px solid var(--line);background:#f8fafc;border-radius:14px;padding:14px}.feedback.show{display:block}
+    table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:14px}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+    th:first-child,td:first-child{text-align:left}th{background:#f8fafc;color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.04em}tr:last-child td{border-bottom:0}
+    .mini{display:grid;gap:8px}.minirow{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed var(--line);padding-bottom:7px;font-size:13px}.minirow:last-child{border-bottom:0;padding-bottom:0}
+    .resultcard{border:1px solid var(--line);border-radius:17px;background:#fff;padding:16px}.hidden{display:none!important}
+    pre{white-space:pre-wrap;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:14px}
+    .footer{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;font-size:12px;color:var(--muted)}
+    .likert{display:grid;grid-template-columns:1.5fr repeat(5, 56px);gap:8px;align-items:center;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:12px;background:#fff}
+    .likert span{font-size:14px}.likert label{text-align:center;margin:0;font-size:13px;font-weight:700}
+    @media(max-width:950px){.layout,.hero,.grid2,.grid3{grid-template-columns:1fr}.side{position:static}.top{flex-direction:column}th,td{white-space:normal}.likert{grid-template-columns:1fr repeat(5,45px)}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div>
+      <div class="kicker">Pre-test + game + post-test + survey</div>
+      <h1>Vizag Coastal Refinery: Lost Barrels & Hidden Activities</h1>
+    </div>
+    <div class="pill">GitHub Pages + Google Sheets tracking</div>
+  </div>
+
+  <div class="layout">
+    <aside class="side">
+      <h3>Game dashboard</h3>
+      <p class="small">Individual activity. Data goes to Google Sheets when the final screen opens.</p>
+      <div id="progress" class="progress"></div>
+
+      <div class="scorebox">
+        <div class="small">Game score</div>
+        <span class="scorebig" id="scoreNow">0</span><span class="small"> / 100</span>
+        <div class="meter"><div class="bar" id="scoreBar"></div></div>
+      </div>
+
+      <div class="scorebox">
+        <div class="small">Pre / Post</div>
+        <strong><span id="preNow">0</span>/5 → <span id="postNow">0</span>/5</strong>
+      </div>
+
+      <div class="scorebox">
+        <div class="small">Student</div>
+        <strong id="sideName">Not set</strong>
+        <div class="small" id="sideRole">Role not set</div>
+      </div>
+
+      <div class="footer">Weighted-average only. ABC is used only for order-level support-cost analysis.</div>
+    </aside>
+
+    <main>
+      <section class="screen active" id="screen0">
+        <div class="hero">
+          <div>
+            <h2>Opening scene</h2>
+            <p>It is 8:15 a.m. at Vizag Coastal Refinery. Overnight crude shipments have become uncertain after conflict in a key shipping corridor. Insurance premiums are higher. Crude quality is uneven. The distillation team is under pressure to keep output moving.</p>
+            <p>The Production Manager says the refinery is still efficient. The Cost Accountant is not so sure. The CFO wants two answers: first, the weighted-average process cost report; second, whether ABC reveals hidden order-level support costs.</p>
+            <div class="callout">
+              <strong>Your mission:</strong> complete the pre-test, solve the process-costing and ABC game, complete the post-test, and submit a short CFO recommendation.
+            </div>
+            <div class="callout warn"><strong>Important:</strong> Process costing uses weighted-average only. Do not use FIFO.</div>
+            <div class="grid2">
+              <div><label>Student name</label><input id="studentName" placeholder="Enter name"></div>
+              <div><label>Roll number / ID</label><input id="rollNo" placeholder="Enter roll number"></div>
+              <div><label>Email</label><input id="studentEmail" type="email" placeholder="Enter email"></div>
+              <div>
+                <label>Role</label>
+                <select id="studentRole">
+                  <option value="">Choose role</option>
+                  <option>Cost Accountant</option>
+                  <option>Production Manager</option>
+                  <option>CFO</option>
+                  <option>Refinery Operations Analyst</option>
+                  <option>Audit Committee Member</option>
+                </select>
+              </div>
+            </div>
+            <div class="callout good">
+              <label style="display:flex;gap:10px;align-items:flex-start;font-weight:700;">
+                <input id="consentBox" type="checkbox" style="width:auto;margin-top:4px;">
+                I understand that my responses may be used by the instructor to evaluate learning and improve the case activity.
+              </label>
+            </div>
+            <div class="btnrow">
+              <button onclick="startGame()">Start pre-test</button>
+              
+            </div>
+          </div>
+          <div class="panel">
+            <h3>What will be captured</h3>
+            <div class="mini">
+              <div class="minirow"><span>Student details</span><strong>Name/ID/email</strong></div>
+              <div class="minirow"><span>Pre-test score</span><strong>5 questions</strong></div>
+              <div class="minirow"><span>Game score</span><strong>100 marks</strong></div>
+              <div class="minirow"><span>Post-test score</span><strong>5 questions</strong></div>
+              <div class="minirow"><span>Survey</span><strong>5 items</strong></div>
+              <div class="minirow"><span>Recommendation</span><strong>CFO memo</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="screen1">
+        <h2>Pre-test: before the case</h2>
+        <p>Answer these quickly. This is to capture your starting understanding.</p>
+        <div id="preQuestions"></div>
+        <div class="btnrow"><button onclick="submitPre()">Submit pre-test</button><button class="secondary" onclick="goTo(0)">Back</button></div>
+        <div class="feedback" id="preFeedback"></div>
+      </section>
+
+      <section class="screen" id="screen2">
+        <h2>Round 1 - Diagnose the refinery problem</h2>
+        <p>Select all correct observations from the case.</p>
+        <div class="grid2" id="diagnosisChoices">
+          <div class="choice" data-correct="true" onclick="toggleMulti(this)"><span class="tag">External pressure</span><h3>Oil supply disruption can increase material cost.</h3><p class="small">Crude purchase, freight, and insurance pressure may affect input cost.</p></div>
+          <div class="choice" data-correct="true" onclick="toggleMulti(this)"><span class="tag">Process issue</span><h3>Actual process loss is higher than normal loss.</h3><p class="small">This may create abnormal loss requiring separate attention.</p></div>
+          <div class="choice" data-correct="true" onclick="toggleMulti(this)"><span class="tag">Costing issue</span><h3>Ending WIP must be converted into equivalent units.</h3><p class="small">Physical units alone are not enough.</p></div>
+          <div class="choice" data-correct="false" onclick="toggleMulti(this)"><span class="tag">Wrong method</span><h3>FIFO should be used because beginning WIP exists.</h3><p class="small">Not in this activity. Use weighted-average only.</p></div>
+          <div class="choice" data-correct="false" onclick="toggleMulti(this)"><span class="tag">Wrong conclusion</span><h3>Normal loss and abnormal loss should both be ignored.</h3><p class="small">Abnormal loss must be separately costed.</p></div>
+        </div>
+        <div class="btnrow"><button onclick="scoreDiagnosis()">Submit diagnosis</button><button class="secondary" onclick="goTo(1)">Back</button></div>
+        <div class="feedback" id="diagnosisFeedback"></div>
+      </section>
+
+      <section class="screen" id="screen3">
+        <h2>Round 2 - Physical flow and loss classification</h2>
+        <p>Use the case facts: beginning WIP 8,000 KL; started 92,000 KL; completed 84,000 KL; ending WIP 10,000 KL; actual loss 6,000 KL; normal loss is 4% of total input.</p>
+        <div class="grid2">
+          <div><label>Total units to account for</label><input id="totalUnits" type="number" placeholder="100000"></div>
+          <div><label>Normal loss</label><input id="normalLoss" type="number" placeholder="4000"></div>
+          <div><label>Abnormal loss</label><input id="abnormalLoss" type="number" placeholder="2000"></div>
+          <div><label>Total units accounted for</label><input id="accountedUnits" type="number" placeholder="100000"></div>
+        </div>
+        <div class="btnrow"><button onclick="scoreFlow()">Submit flow</button><button class="secondary" onclick="goTo(2)">Back</button></div>
+        <div class="feedback" id="flowFeedback"></div>
+      </section>
+
+      <section class="screen" id="screen4">
+        <h2>Round 3 - Equivalent units</h2>
+        <p>Normal loss is excluded. Abnormal loss is costed. Ending WIP is 100% complete for material and 50% complete for conversion.</p>
+        <div class="grid2">
+          <div><label>Total material equivalent units</label><input id="matEU" type="number" placeholder="96000"></div>
+          <div><label>Total conversion equivalent units</label><input id="convEU" type="number" placeholder="91000"></div>
+        </div>
+        <div class="btnrow"><button onclick="scoreEU()">Submit equivalent units</button><button class="secondary" onclick="goTo(3)">Back</button></div>
+        <div class="feedback" id="euFeedback"></div>
+      </section>
+
+      <section class="screen" id="screen5">
+        <h2>Round 4 - Cost per equivalent unit</h2>
+        <p>Weighted-average combines beginning WIP cost and current-period cost.</p>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Cost category</th><th>Beginning WIP</th><th>Added during month</th><th>Total</th></tr></thead>
+            <tbody>
+              <tr><td>Materials</td><td>₹8,00,000</td><td>₹88,00,000</td><td>₹96,00,000</td></tr>
+              <tr><td>Conversion</td><td>₹2,50,000</td><td>₹43,00,000</td><td>₹45,50,000</td></tr>
+              <tr><td><strong>Total</strong></td><td><strong>₹10,50,000</strong></td><td><strong>₹1,31,00,000</strong></td><td><strong>₹1,41,50,000</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid3" style="margin-top:14px">
+          <div><label>Material cost per EU</label><input id="matRate" type="number" placeholder="100"></div>
+          <div><label>Conversion cost per EU</label><input id="convRate" type="number" placeholder="50"></div>
+          <div><label>Total cost per EU</label><input id="totalRate" type="number" placeholder="150"></div>
+        </div>
+        <div class="btnrow"><button onclick="scoreRate()">Submit rates</button><button class="secondary" onclick="goTo(4)">Back</button></div>
+        <div class="feedback" id="rateFeedback"></div>
+      </section>
+
+      <section class="screen" id="screen6">
+        <h2>Round 5 - Cost assignment</h2>
+        <p>Assign process cost to completed units, ending WIP, and abnormal loss.</p>
+        <div class="grid3">
+          <div><label>Cost of completed/transferred units</label><input id="completedCost" type="number" placeholder="12600000"></div>
+          <div><label>Cost of ending WIP</label><input id="endingCost" type="number" placeholder="1250000"></div>
+          <div><label>Cost of abnormal loss</label><input id="abnormalCost" type="number" placeholder="300000"></div>
+        </div>
+        <div class="btnrow"><button onclick="scoreAssignment()">Submit assignment</button><button class="secondary" onclick="goTo(5)">Back</button></div>
+        <div class="feedback" id="assignFeedback"></div>
+      </section>
+
+      <section class="screen" id="screen7">
+        <h2>Round 6 - ABC hidden activities</h2>
+        <p>The CFO now asks whether customer orders consumed support activities differently. Compute activity rates.</p>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Activity</th><th>Cost pool</th><th>Total driver quantity</th></tr></thead>
+            <tbody>
+              <tr><td>Crude quality testing</td><td>₹4,20,000</td><td>140 tests</td></tr>
+              <tr><td>Blend adjustment</td><td>₹5,00,000</td><td>100 changes</td></tr>
+              <tr><td>Emergency scheduling</td><td>₹3,00,000</td><td>20 rush orders</td></tr>
+              <tr><td>Tanker waiting/demurrage coordination</td><td>₹3,50,000</td><td>350 hours</td></tr>
+              <tr><td>Dispatch documentation</td><td>₹2,80,000</td><td>400 documents</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid3" style="margin-top:14px">
+          <div><label>Lab test rate</label><input id="labRate" type="number" placeholder="3000"></div>
+          <div><label>Blend change rate</label><input id="blendRate" type="number" placeholder="5000"></div>
+          <div><label>Rush order rate</label><input id="rushRate" type="number" placeholder="15000"></div>
+          <div><label>Waiting hour rate</label><input id="waitRate" type="number" placeholder="1000"></div>
+          <div><label>Document rate</label><input id="docRate" type="number" placeholder="700"></div>
+        </div>
+        <div class="btnrow"><button onclick="scoreABCRates()">Submit ABC rates</button><button class="secondary" onclick="goTo(6)">Back</button></div>
+        <div class="feedback" id="abcRateFeedback"></div>
+      </section>
+
+      <section class="screen" id="screen8">
+        <h2>Round 7 - Order-level profitability</h2>
+        <p>Use process cost per KL = ₹150 and ABC support cost usage to evaluate the orders.</p>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Driver</th><th>Order A</th><th>Order B</th><th>Order C</th></tr></thead>
+            <tbody>
+              <tr><td>KL supplied</td><td>30,000</td><td>34,000</td><td>20,000</td></tr>
+              <tr><td>Selling price per KL</td><td>₹175</td><td>₹170</td><td>₹200</td></tr>
+              <tr><td>Lab tests</td><td>30</td><td>35</td><td>75</td></tr>
+              <tr><td>Blend changes</td><td>15</td><td>20</td><td>65</td></tr>
+              <tr><td>Rush orders</td><td>2</td><td>3</td><td>15</td></tr>
+              <tr><td>Waiting hours</td><td>50</td><td>70</td><td>230</td></tr>
+              <tr><td>Dispatch documents</td><td>120</td><td>150</td><td>130</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid3" style="margin-top:14px">
+          <div><label>Order A ABC support cost</label><input id="abcA" type="number" placeholder="329000"></div>
+          <div><label>Order B ABC support cost</label><input id="abcB" type="number" placeholder="425000"></div>
+          <div><label>Order C ABC support cost</label><input id="abcC" type="number" placeholder="1096000"></div>
+          <div><label>Order A profit/loss per KL</label><input id="profitA" type="number" step="0.01" placeholder="14.03"></div>
+          <div><label>Order B profit/loss per KL</label><input id="profitB" type="number" step="0.01" placeholder="7.50"></div>
+          <div><label>Order C profit/loss per KL</label><input id="profitC" type="number" step="0.01" placeholder="-4.80"></div>
+        </div>
+        <div class="btnrow"><button onclick="scoreABCOrders()">Submit order analysis</button><button class="secondary" onclick="goTo(7)">Back</button></div>
+        <div class="feedback" id="abcOrderFeedback"></div>
+      </section>
+
+      <section class="screen" id="screen9">
+        <h2>Round 8 - CFO decision</h2>
+        <p>Now make a managerial call.</p>
+        <div class="grid2" id="judgmentChoices">
+          <div class="choice" data-score="5" onclick="selectSingle(this,'judgmentChoices')"><span class="tag">Too accepting</span><h3>Accept all future emergency orders at the same price.</h3><p class="small">This ignores ABC support-cost consumption.</p></div>
+          <div class="choice" data-score="15" onclick="selectSingle(this,'judgmentChoices')"><span class="tag">Best answer</span><h3>Accept emergency orders only with surcharge or repricing.</h3><p class="small">External pressure and hidden activities need pricing discipline.</p></div>
+          <div class="choice" data-score="8" onclick="selectSingle(this,'judgmentChoices')"><span class="tag">Too narrow</span><h3>Reject all emergency orders permanently.</h3><p class="small">May be too rigid if capacity or strategic value exists.</p></div>
+          <div class="choice" data-score="4" onclick="selectSingle(this,'judgmentChoices')"><span class="tag">Wrong</span><h3>Use only process cost and ignore ABC in pricing.</h3><p class="small">This misses hidden activity consumption.</p></div>
+        </div>
+        <div style="margin-top:14px"><label>Write your CFO recommendation</label><textarea id="finalRecommendation" placeholder="In my view..."></textarea></div>
+        <div style="margin-top:12px"><label>One risk/control action management should take</label><textarea id="riskAction" placeholder="Management should..."></textarea></div>
+        <div class="btnrow"><button onclick="scoreJudgment()">Submit decision</button><button class="secondary" onclick="goTo(8)">Back</button></div>
+        <div class="feedback" id="judgmentFeedback"></div>
+      </section>
+
+      <section class="screen" id="screen10">
+        <h2>Post-test: after the case</h2>
+        <p>Answer these after completing the game. This helps measure learning gain.</p>
+        <div id="postQuestions"></div>
+        <div class="btnrow"><button onclick="submitPost()">Submit post-test</button><button class="secondary" onclick="goTo(9)">Back</button></div>
+        <div class="feedback" id="postFeedback"></div>
+      </section>
+
+      <section class="screen" id="screen11">
+        <h2>Short perception survey</h2>
+        <p>Rate each item from 1 = strongly disagree to 5 = strongly agree.</p>
+        <div id="surveyWrap"></div>
+        <div style="margin-top:14px"><label>Open comment</label><textarea id="openComment" placeholder="What helped you learn? What was confusing?"></textarea></div>
+        <div class="btnrow"><button onclick="submitSurvey()">Submit survey and finish</button><button class="secondary" onclick="goTo(10)">Back</button></div>
+        <div class="feedback" id="surveyFeedback"></div>
+      </section>
+
+      <section class="screen" id="screen12">
+        <h2>Final result</h2>
+        <div class="grid2">
+          <div class="resultcard">
+            <h3 id="badgeTitle">Result</h3>
+            <p id="badgeText"></p>
+            <div class="scorebox"><div class="small">Game score</div><span class="scorebig" id="finalScore">0</span><span class="small"> / 100</span></div>
+            <div class="scorebox"><div class="small">Pre-test → Post-test</div><strong><span id="finalPre">0</span>/5 → <span id="finalPost">0</span>/5</strong></div>
+            <div class="feedback show" id="submitNotice">Score submission attempted. Check Google Sheet Responses tab.</div>
+          </div>
+          <div class="resultcard">
+            <h3>Debrief questions</h3>
+            <ol>
+              <li>What did process costing reveal?</li>
+              <li>What did ABC reveal that average process cost hid?</li>
+              <li>Why does Order C look attractive under price but weak under ABC?</li>
+              <li>Should emergency orders carry a surcharge?</li>
+            </ol>
+          </div>
+        </div>
+        <div class="resultcard" style="margin-top:14px">
+          <h3>Student response summary</h3>
+          <pre id="summaryBox"></pre>
+        </div>
+        <div class="btnrow"><button onclick="downloadSummary()">Download summary</button><button class="secondary" onclick="restart()">Restart</button></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+const SCORE_ENDPOINT = "https://script.google.com/macros/s/AKfycbziHf6vLydmZJK5AfolSOftcQLgrCRlePtSywRyou4k0piAH65Zs_U0oaMJKfVJWOTQYg/exec;
+
+const preQs = [
+  {id:"pre1", q:"Under weighted-average process costing, beginning WIP costs are:", a:"B", opts:{A:"Kept separate from current costs", B:"Combined with current-period costs", C:"Ignored", D:"Transferred directly to abnormal loss"}},
+  {id:"pre2", q:"Normal loss is usually:", a:"C", opts:{A:"Always treated as ending WIP", B:"Always ignored for all purposes", C:"Excluded from equivalent units when it has no separate cost assignment", D:"Added to completed units"}},
+  {id:"pre3", q:"Equivalent units are needed because:", a:"A", opts:{A:"Some units may be partly complete", B:"Selling price changes every month", C:"Only cash costs are relevant", D:"ABC requires no drivers"}},
+  {id:"pre4", q:"If actual loss is above normal loss, the excess is:", a:"B", opts:{A:"Normal gain", B:"Abnormal loss", C:"Ending WIP", D:"Sales return"}},
+  {id:"pre5", q:"ABC mainly helps identify:", a:"D", opts:{A:"Only direct material cost", B:"Only tax liability", C:"Only FIFO profit", D:"Activities and drivers consuming support resources"}}
+];
+
+const postQs = [
+  {id:"post1", q:"In this case, actual loss is 6,000 KL and normal loss is 4,000 KL. Abnormal loss is:", a:"B", opts:{A:"1,000 KL", B:"2,000 KL", C:"4,000 KL", D:"6,000 KL"}},
+  {id:"post2", q:"The material equivalent units in the process-costing part are:", a:"C", opts:{A:"84,000", B:"91,000", C:"96,000", D:"100,000"}},
+  {id:"post3", q:"The conversion equivalent units in the process-costing part are:", a:"B", opts:{A:"84,000", B:"91,000", C:"96,000", D:"100,000"}},
+  {id:"post4", q:"ABC changed the interpretation because it showed that:", a:"D", opts:{A:"All orders consumed support activities equally", B:"FIFO was necessary", C:"Process costing is always wrong", D:"Order C consumed much more support activity per KL"}},
+  {id:"post5", q:"The strongest CFO recommendation for similar emergency orders is:", a:"C", opts:{A:"Accept all at current price", B:"Ignore ABC because selling price is high", C:"Accept only with surcharge/repricing or clear strategic justification", D:"Treat abnormal loss as ending WIP"}}
+];
+
+const surveyItems = [
+  {id:"s1", text:"The game improved my understanding of weighted-average process costing."},
+  {id:"s2", text:"The ABC part helped me see the limitation of average process cost."},
+  {id:"s3", text:"The war/supply-shock story made the accounting problem more realistic."},
+  {id:"s4", text:"The game format increased my engagement compared with a normal numerical problem."},
+  {id:"s5", text:"I would like similar interactive cases in management accounting."}
+];
+
+const steps = ["Setup","Pre-test","Diagnose","Flow","EU","Rates","Assign","ABC rates","Orders","Decision","Post-test","Survey","Result"];
+const state = {screen:0, score:0, awarded:{}, role:"", preScore:0, postScore:0, preAnswers:{}, postAnswers:{}, survey:{}, finalRecommendation:"", riskAction:""};
+
+function safeValue(id){ const el = document.getElementById(id); return el ? el.value.trim() : ""; }
+function update(){ 
+  steps.forEach((_,i)=>{ const el=document.getElementById("step"+i); if(!el) return; el.className="step"+(i===state.screen?" active":"")+(i<state.screen?" done":""); });
+  document.getElementById("scoreNow").innerText=state.score;
+  document.getElementById("scoreBar").style.width=Math.min(100,state.score)+"%";
+  document.getElementById("preNow").innerText=state.preScore;
+  document.getElementById("postNow").innerText=state.postScore;
+  document.getElementById("sideName").innerText=safeValue("studentName")||"Not set";
+  document.getElementById("sideRole").innerText=state.role||safeValue("studentRole")||"Role not set";
+}
+function init(){
+  document.getElementById("progress").innerHTML=steps.map((s,i)=>`<div class="step ${i===0?"active":""}" id="step${i}"><div class="dot">${i}</div><div>${s}</div></div>`).join("");
+  renderQuiz("preQuestions",preQs,"pre");
+  renderQuiz("postQuestions",postQs,"post");
+  renderSurvey();
+  update();
+}
+function goTo(n){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); document.getElementById("screen"+n).classList.add("active"); state.screen=n; update(); }
+function startGame(){
+  if(!safeValue("studentName") || !safeValue("rollNo")){ alert("Please enter student name and roll number."); return; }
+  if(!document.getElementById("consentBox").checked){ alert("Please tick the consent/acknowledgement box to continue."); return; }
+  state.role=safeValue("studentRole")||"Role not selected"; goTo(1);
+}
+function renderQuiz(containerId, qs, prefix){
+  document.getElementById(containerId).innerHTML = qs.map((q,idx)=>`
+    <div class="panel" style="margin-bottom:12px">
+      <h3>Q${idx+1}. ${q.q}</h3>
+      ${Object.entries(q.opts).map(([k,v])=>`
+        <label style="font-weight:600;margin:8px 0"><input type="radio" name="${q.id}" value="${k}" style="width:auto;margin-right:8px"> ${k}. ${v}</label>
+      `).join("")}
+    </div>
+  `).join("");
+}
+function scoreQuiz(qs, store){
+  let score=0; qs.forEach(q=>{ const selected=document.querySelector(`input[name="${q.id}"]:checked`); const val=selected?selected.value:""; store[q.id]=val; if(val===q.a) score++; });
+  return score;
+}
+function submitPre(){
+  state.preScore=scoreQuiz(preQs,state.preAnswers);
+  document.getElementById("preFeedback").classList.add("show");
+  document.getElementById("preFeedback").innerHTML=`<strong>Pre-test score: ${state.preScore}/5.</strong><br>Now continue to the case game.`;
+  update(); setTimeout(()=>goTo(2),900);
+}
+function submitPost(){
+  state.postScore=scoreQuiz(postQs,state.postAnswers);
+  document.getElementById("postFeedback").classList.add("show");
+  document.getElementById("postFeedback").innerHTML=`<strong>Post-test score: ${state.postScore}/5.</strong><br>Now complete the short survey.`;
+  update(); setTimeout(()=>goTo(11),900);
+}
+function renderSurvey(){
+  document.getElementById("surveyWrap").innerHTML = surveyItems.map(item=>`
+    <div class="likert">
+      <span>${item.text}</span>
+      ${[1,2,3,4,5].map(n=>`<label><input type="radio" name="${item.id}" value="${n}" style="width:auto"><br>${n}</label>`).join("")}
+    </div>
+  `).join("");
+}
+function submitSurvey(){
+  surveyItems.forEach(item=>{ const s=document.querySelector(`input[name="${item.id}"]:checked`); state.survey[item.id]=s?s.value:""; });
+  document.getElementById("surveyFeedback").classList.add("show");
+  document.getElementById("surveyFeedback").innerHTML="Survey captured. Final screen opening now.";
+  setTimeout(showResult,700);
+}
+function toggleMulti(el){ el.classList.toggle("selected"); }
+function selectSingle(el, groupId){ document.querySelectorAll("#"+groupId+" .choice").forEach(c=>c.classList.remove("selected")); el.classList.add("selected"); }
+function award(key,points){ if(state.awarded[key]) return; state.awarded[key]=points; state.score+=points; update(); }
+function closeEnough(id, answer, tolerance=0){ const v=Number(safeValue(id)); return Math.abs(v-answer)<=tolerance; }
+
+function scoreDiagnosis(){
+  const choices=[...document.querySelectorAll("#diagnosisChoices .choice")]; let raw=0;
+  choices.forEach(c=>{ const sel=c.classList.contains("selected"), cor=c.dataset.correct==="true"; c.classList.remove("correct","wrong"); if(sel&&cor){raw+=5;c.classList.add("correct")} if(sel&&!cor){raw-=3;c.classList.add("wrong")} if(!sel&&cor){c.classList.add("wrong")} });
+  const pts=Math.max(0,Math.min(10,raw)); award("diagnosis",pts);
+  document.getElementById("diagnosisFeedback").classList.add("show");
+  document.getElementById("diagnosisFeedback").innerHTML=`<strong>Round score: ${pts}/10.</strong><br>External pressure is real, but abnormal loss and WIP costing must also be examined.`;
+  setTimeout(()=>goTo(3),1000);
+}
+function scoreFlow(){ let pts=0; if(closeEnough("totalUnits",100000)) pts+=4; if(closeEnough("normalLoss",4000)) pts+=4; if(closeEnough("abnormalLoss",2000)) pts+=4; if(closeEnough("accountedUnits",100000)) pts+=3; award("flow",pts); document.getElementById("flowFeedback").classList.add("show"); document.getElementById("flowFeedback").innerHTML=`<strong>Round score: ${pts}/15.</strong><br>Total input = 100,000 KL; normal loss = 4,000 KL; abnormal loss = 2,000 KL.`; setTimeout(()=>goTo(4),1000); }
+function scoreEU(){ let pts=0; if(closeEnough("matEU",96000)) pts+=8; if(closeEnough("convEU",91000)) pts+=7; award("eu",pts); document.getElementById("euFeedback").classList.add("show"); document.getElementById("euFeedback").innerHTML=`<strong>Round score: ${pts}/15.</strong><br>Material EU = 96,000; conversion EU = 91,000.`; setTimeout(()=>goTo(5),1000); }
+function scoreRate(){ let pts=0; if(closeEnough("matRate",100,.5)) pts+=5; if(closeEnough("convRate",50,.5)) pts+=5; if(closeEnough("totalRate",150,.5)) pts+=5; award("rate",pts); document.getElementById("rateFeedback").classList.add("show"); document.getElementById("rateFeedback").innerHTML=`<strong>Round score: ${pts}/15.</strong><br>Material rate ₹100; conversion rate ₹50; total ₹150.`; setTimeout(()=>goTo(6),1000); }
+function scoreAssignment(){ let pts=0; if(closeEnough("completedCost",12600000,100)) pts+=6; if(closeEnough("endingCost",1250000,100)) pts+=5; if(closeEnough("abnormalCost",300000,100)) pts+=4; award("assign",pts); document.getElementById("assignFeedback").classList.add("show"); document.getElementById("assignFeedback").innerHTML=`<strong>Round score: ${pts}/15.</strong><br>Completed ₹1,26,00,000; ending WIP ₹12,50,000; abnormal loss ₹3,00,000.`; setTimeout(()=>goTo(7),1000); }
+function scoreABCRates(){ let pts=0; if(closeEnough("labRate",3000,1)) pts+=3; if(closeEnough("blendRate",5000,1)) pts+=3; if(closeEnough("rushRate",15000,1)) pts+=3; if(closeEnough("waitRate",1000,1)) pts+=3; if(closeEnough("docRate",700,1)) pts+=3; award("abcRates",pts); document.getElementById("abcRateFeedback").classList.add("show"); document.getElementById("abcRateFeedback").innerHTML=`<strong>Round score: ${pts}/15.</strong><br>Rates: lab ₹3,000; blend ₹5,000; rush ₹15,000; wait ₹1,000; document ₹700.`; setTimeout(()=>goTo(8),1000); }
+function scoreABCOrders(){ let pts=0; if(closeEnough("abcA",329000,100)) pts+=4; if(closeEnough("abcB",425000,100)) pts+=4; if(closeEnough("abcC",1096000,100)) pts+=4; if(closeEnough("profitA",14.03,.2)) pts+=2; if(closeEnough("profitB",7.50,.2)) pts+=2; if(closeEnough("profitC",-4.80,.2)) pts+=4; award("abcOrders",pts); document.getElementById("abcOrderFeedback").classList.add("show"); document.getElementById("abcOrderFeedback").innerHTML=`<strong>Round score: ${pts}/20.</strong><br>Order C looks attractive on selling price, but ABC shows a loss per KL because it consumes heavy support activities.`; setTimeout(()=>goTo(9),1200); }
+function scoreJudgment(){ const selected=document.querySelector("#judgmentChoices .choice.selected"); if(!selected){alert("Please select a decision.");return;} let pts=Number(selected.dataset.score); state.finalRecommendation=safeValue("finalRecommendation"); state.riskAction=safeValue("riskAction"); if(state.finalRecommendation.length>50) pts+=3; if(state.riskAction.length>35) pts+=2; pts=Math.min(15,pts); award("judgment",pts); document.getElementById("judgmentFeedback").classList.add("show"); document.getElementById("judgmentFeedback").innerHTML=`<strong>Round score: ${pts}/15.</strong><br>Best call: accept emergency orders only with surcharge/repricing or strategic justification.`; setTimeout(()=>goTo(10),900); }
+
+function submitScoreToGoogleSheet(){
+  if(!SCORE_ENDPOINT || SCORE_ENDPOINT.includes("PASTE_GOOGLE_APPS_SCRIPT")){
+    document.getElementById("submitNotice").innerHTML="Google Apps Script URL not configured. Score was not sent.";
+    return;
+  }
+  const params = new URLSearchParams({
+    action:"submit_score",
+    timestamp_client:new Date().toISOString(),
+    name:safeValue("studentName"), roll_no:safeValue("rollNo"), email:safeValue("studentEmail"), role:state.role||safeValue("studentRole"),
+    pre_score:String(state.preScore), post_score:String(state.postScore), game_score:String(state.score), max_game_score:"100",
+    pre_answers:JSON.stringify(state.preAnswers), post_answers:JSON.stringify(state.postAnswers),
+    total_units:safeValue("totalUnits"), normal_loss:safeValue("normalLoss"), abnormal_loss:safeValue("abnormalLoss"), accounted_units:safeValue("accountedUnits"),
+    material_eu:safeValue("matEU"), conversion_eu:safeValue("convEU"), material_rate:safeValue("matRate"), conversion_rate:safeValue("convRate"), total_rate:safeValue("totalRate"),
+    completed_cost:safeValue("completedCost"), ending_wip_cost:safeValue("endingCost"), abnormal_loss_cost:safeValue("abnormalCost"),
+    lab_rate:safeValue("labRate"), blend_rate:safeValue("blendRate"), rush_rate:safeValue("rushRate"), wait_rate:safeValue("waitRate"), doc_rate:safeValue("docRate"),
+    abc_a:safeValue("abcA"), abc_b:safeValue("abcB"), abc_c:safeValue("abcC"), profit_a:safeValue("profitA"), profit_b:safeValue("profitB"), profit_c:safeValue("profitC"),
+    final_recommendation:state.finalRecommendation||"", risk_action:state.riskAction||"",
+    survey_s1:state.survey.s1||"", survey_s2:state.survey.s2||"", survey_s3:state.survey.s3||"", survey_s4:state.survey.s4||"", survey_s5:state.survey.s5||"",
+    open_comment:safeValue("openComment"), user_agent:navigator.userAgent
+  });
+  const img = new Image();
+  img.src = SCORE_ENDPOINT + "?" + params.toString();
+  window.__scoreSubmitBeacon = img;
+}
+
+function showResult(){
+  goTo(12);
+  document.getElementById("finalScore").innerText=state.score;
+  document.getElementById("finalPre").innerText=state.preScore;
+  document.getElementById("finalPost").innerText=state.postScore;
+  let title, text;
+  if(state.score>=85){title="Board-ready cost analysis"; text="Excellent. You handled process costing, ABC, and the CFO decision clearly."}
+  else if(state.score>=65){title="Good attempt"; text="You understood the main idea. Review any calculation areas where your score dropped."}
+  else{title="Needs revision"; text="Revisit equivalent units, abnormal loss, and ABC order profitability."}
+  document.getElementById("badgeTitle").innerText=title; document.getElementById("badgeText").innerText=text;
+  const summary=[
+    "VIZAG COASTAL REFINERY - GAME SUMMARY",
+    "Name: "+safeValue("studentName"), "Roll No: "+safeValue("rollNo"), "Email: "+safeValue("studentEmail"), "Role: "+(state.role||safeValue("studentRole")),
+    "Pre-test: "+state.preScore+"/5", "Game score: "+state.score+"/100", "Post-test: "+state.postScore+"/5",
+    "", "Process costing:", "Normal loss: "+safeValue("normalLoss"), "Abnormal loss: "+safeValue("abnormalLoss"), "Material EU: "+safeValue("matEU"), "Conversion EU: "+safeValue("convEU"), "Total rate: "+safeValue("totalRate"), "Abnormal loss cost: "+safeValue("abnormalCost"),
+    "", "ABC:", "Order A support cost: "+safeValue("abcA")+" | Profit/KL: "+safeValue("profitA"), "Order B support cost: "+safeValue("abcB")+" | Profit/KL: "+safeValue("profitB"), "Order C support cost: "+safeValue("abcC")+" | Profit/KL: "+safeValue("profitC"),
+    "", "Recommendation:", state.finalRecommendation||"(not entered)", "", "Risk/control action:", state.riskAction||"(not entered)", "", "Open comment:", safeValue("openComment")||"(none)"
+  ].join("\n");
+  document.getElementById("summaryBox").innerText=summary;
+  submitScoreToGoogleSheet();
+}
+function downloadSummary(){ const text=document.getElementById("summaryBox").innerText; const blob=new Blob([text],{type:"text/plain"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="vizag-refinery-game-summary.txt"; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+function restart(){ location.reload(); }
+
+init();
+</script>
+</body>
+</html>
