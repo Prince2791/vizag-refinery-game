@@ -127,7 +127,7 @@ textarea{width:100%;min-height:96px;font:inherit;padding:10px;border:1px solid v
 /* ============ content ============ */
 const BOX={AC:"Amortised cost (old: held to maturity)",FVOCI:"FVOCI (old: available for sale)",FVTPL:"FVTPL (old: held for trading)",ASSOC:"Equity method: associate",JV:"Equity method: joint venture",JO:"Own share of assets, liabilities, income (joint operation)",SUB:"Consolidate (control)"};
 const TAGC={debt:"t-debt",eq:"t-eq",con:"t-con"};
-const DEALS=[
+const SDEALS=[
  {id:"gsec",kind:"debt",tag:"debt",label:"Debt security",name:"7.10% Government of India bond, 2034",t:200,coupon:.071,dur:7.0,ok:["AC","FVOCI","FVTPL"],
   facts:["Bought at par; pays 7.1% a year","Duration about 7 years: price falls ~7% for every 1% rise in yields","You choose the business model: hold to collect, collect and sell, or trade"]},
  {id:"psu",kind:"debt",tag:"debt",label:"Debt security",name:"8.00% AAA PSU bond, 3 years",t:150,coupon:.08,dur:2.7,ok:["AC","FVOCI","FVTPL"],
@@ -147,22 +147,44 @@ const DEALS=[
  {id:"spv",kind:"se",tag:"eq",label:"Equity stake · 2%",name:"GreenLease Solar SPV",t:10,profit:12,gross:510,debt:500,ok:["SUB"],
   facts:["You own only 2% of its shares","You guarantee its ₹500 cr bank loan and decide which solar projects it funds","A service contract passes all its profits (about ₹12 cr a year) to you"]}
 ];
+/* stage 6 deals: same kinds as stages 1-5, new names and twists */
+const DEALS=[
+ {id:"gsec",kind:"debt",tag:"debt",label:"Debt security",name:"7.18% Government of India bond, 2033",sn:"G-sec 2033",t:200,coupon:.0718,dur:6.5,ok:["AC","FVOCI","FVTPL"],
+  facts:["Bought at par; pays 7.18% a year","Duration about 6.5 years","You choose the business model: hold to collect, collect and sell, or trade"]},
+ {id:"psu",kind:"debt",tag:"debt",label:"Debt security",name:"8.10% AA+ NBFC bonds (liquidity book)",sn:"NBFC bonds",t:150,coupon:.081,dur:2.5,ok:["FVOCI"],
+  facts:["Bought at par; pays 8.1% a year; duration about 2.5 years","Held in the treasury's liquidity book: coupons are collected, and bonds are sold whenever cash is needed","The book sold bonds four times last year"]},
+ {id:"mf",kind:"mf",tag:"debt",label:"Hybrid security",name:"Compulsorily convertible debentures of Volta Motors",sn:"Volta CCDs",t:100,ret:.09,ok:["FVTPL"],
+  facts:["Pay 6% a year until they convert into Volta shares in 2028","Their value moves with Volta's share price; expected return about 9% a year","Unlisted; you hold them for the conversion"]},
+ {id:"bank",kind:"eq",tag:"eq",label:"Equity stake · 3%",name:"3% stake in Deccan Cement Ltd (listed)",sn:"Deccan Cement",t:200,div:.015,ok:["FVTPL","FVOCI"],
+  facts:["No board seat, no say in policy","Dividend yield about 1.5%","Long-term holding: you may make the irrevocable FVOCI election on day one, or not"]},
+ {id:"volt",kind:"assoc",tag:"eq",label:"Equity stake · 18%",name:"18% of Nexa Cells Pvt Ltd",sn:"Nexa Cells",t:120,share:.18,ok:["ASSOC"],
+  facts:["Only 18%, but you appoint 1 of its 5 directors and sit on its technology committee","Nexa supplies the battery packs for your products; your engineers work in its plant","Not listed: no market price"]},
+ {id:"port",kind:"jv",tag:"eq",label:"Equity stake · 55%",name:"55% of Kakinada Cold Terminals Ltd",sn:"Kakinada Cold Terminals",t:250,share:.55,ok:["JV"],
+  facts:["Your partner, a logistics group, owns the other 45%","The shareholders' agreement gives the partner a veto over the budget, capex and the CEO's appointment","A separate company with its own balance sheet and loans"]},
+ {id:"resin",kind:"sub",tag:"eq",label:"Equity stake · 45%",name:"45% of Godavari Polymers Ltd (listed)",sn:"Godavari Polymers",t:300,share:.45,gross:1100,debt:500,na:600,gw:30,ok:["SUB"],
+  facts:["The other 55% is held by over 40,000 retail shareholders; none owns more than 1%","You appoint 5 of its 9 directors and its CEO","Godavari Polymers: total assets ₹1,100 cr, debt ₹500 cr, net assets at fair value ₹600 cr"]},
+ {id:"pipe",kind:"jo",tag:"con",label:"Contract · 40% share",name:"40% of the 'Coastal LNG Joint Venture'",sn:"Coastal LNG terminal",t:120,profit:30,share:.4,ok:["JO"],
+  facts:["The press release calls it a 'joint venture', but no company was formed","A contract with two gas companies: each owns its share of the regasification terminal and pays its share of the costs","The terminal earns about ₹30 cr a year in total"]},
+ {id:"spv",kind:"se",tag:"eq",label:"Trust units · 1%",name:"Suryoday Rooftop Solar Trust (1% of units)",sn:"Suryoday Trust",t:10,profit:12,gross:510,debt:500,ok:["SUB"],
+  facts:["You hold only 1% of the units; outside investors hold the rest","As sponsor you choose its rooftop projects and guarantee its ₹500 cr bank loan","An incentive fee passes all its surplus (about ₹12 cr a year) to you"]}
+];
+const pc=x=>Math.round(x*100)+"%";
 const CASH=1000, OPAT=400, EQUITY=4000, LIAB=3000, BORR=1500, CASH_RATE=.06;
 const EV={
  rate:{label:"RBI repo rate",vals:[-50,0,25,50,75,100],fmt:v=>(v>0?"+":"")+v+" bp",def:3},
- bank:{label:"Coastal Bank share price",vals:[-20,-10,0,10,20,30],fmt:v=>(v>0?"+":"")+v+"%",def:4},
- volt:{label:"VoltNest net profit (₹ cr)",vals:[-200,0,80],fmt:v=>(v>0?"+":"")+v,def:0},
- port:{label:"PortLink net profit (₹ cr)",vals:[30,60,90],fmt:v=>String(v),def:1},
- resin:{label:"Andhra Resins net profit (₹ cr)",vals:[40,80,120],fmt:v=>String(v),def:1}
+ bank:{label:"Deccan Cement share price",vals:[-20,-10,0,10,20,30],fmt:v=>(v>0?"+":"")+v+"%",def:4},
+ volt:{label:"Nexa Cells net profit (₹ cr)",vals:[-200,0,80],fmt:v=>(v>0?"+":"")+v,def:0},
+ port:{label:"Kakinada Cold Terminals net profit (₹ cr)",vals:[30,60,90],fmt:v=>String(v),def:1},
+ resin:{label:"Godavari Polymers net profit (₹ cr)",vals:[40,80,120],fmt:v=>String(v),def:1}
 };
 const EVK=["rate","bank","volt","port","resin"];
-const PIN="FSA2026", SALT="iimv-fsa-deal-desk", VER="v5.1 · research · 31 Oct 2026";
+const PIN="FSA2026", SALT="iimv-fsa-deal-desk", VER="v6.1 · auto leaderboard · 31 Oct 2026";
 function wipeAll(){try{const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.startsWith("dd:")||k.startsWith("dd-")))ks.push(k);}ks.forEach(k=>localStorage.removeItem(k));}catch(e){}}
 /* Google Sheet recording: paste your Apps Script web-app URL (ends in /exec) between the quotes. Leave empty to switch recording off. */
 const SHEET_URL="https://script.google.com/macros/s/AKfycbwExDMq7NSHRdviiXTUZ_PRpFG8tPu_YCU1PkJto8mfqMxQwgMEFCE7qNIVZbFdh6WL/exec";
 function report(stage,data){if(!SHEET_URL)return;try{const body=JSON.stringify(Object.assign({session:S.session,team:S.team,stage,clientTime:new Date().toISOString()},data));fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body}).catch(()=>{});}catch(e){}}
 /* ============ research layer ============ */
-const RESEARCH=true;
+const RESEARCH=false;
 const tkey=()=>String(S.session).toUpperCase()+"|"+String(S.team||"").trim().toLowerCase();
 function rid(){return "R"+h53(tkey()+"|rid").toString(36).slice(0,6).toUpperCase();}
 function aiOK(n){const x=(P().stg||{})[n];return !!(x&&x.ai);}
@@ -225,6 +247,8 @@ function checkForm(kind){
     setView("hub");};
 }
 const pretest=()=>checkForm("pre"),posttest=()=>checkForm("post");
+function sendTok(tk,kind){try{const pp=P();if(pp.sentTok===tk)return;pp.sentTok=tk;saveP();const d=readToken(tk)||{};report("Token",{token:tk,note:kind,score:d.score});}catch(e){}}
+function pullTokens(cb){if(!SHEET_URL){cb(null,"No Google Sheet link in this file.");return;}const nm="ddcb"+Date.now();let done=false;const sc=document.createElement("script");const fin=(d,err)=>{if(done)return;done=true;try{delete window[nm];}catch(e){}sc.remove();cb(d,err);};window[nm]=d=>fin(d);sc.onerror=()=>fin(null,"Could not reach the Google Sheet. Check that the Apps Script is redeployed (v3).");sc.src=SHEET_URL+"?session="+encodeURIComponent(S.session)+"&callback="+nm+"&t="+Date.now();document.head.appendChild(sc);setTimeout(()=>fin(null,"The Google Sheet did not answer. Try again."),15000);}
 const portTxt=port=>Object.entries(port).map(([id,b])=>id+":"+b).join(", ");
 
 /* ============ utils ============ */
@@ -243,10 +267,10 @@ function encodeBr(sess,idx){const m=scr(evN(idx));return "BRF-"+String(m).padSta
 function decodeBr(sess,code){let c=String(code).toUpperCase().replace(/[^A-Z0-9]/g,"").replace(/^BRF/,"");if(c.length!==5)return null;const dg=c.slice(0,3).replace(/O/g,"0").replace(/[IL]/g,"1");if(!/^\d{3}$/.test(dg))return null;const m=+dg;if(bchk(sess,m)!==c.slice(3))return null;for(let n=0;n<NMAX;n++)if(scr(n)===m)return nIdx(n);return null;}
 const HINT={
  rate:["CPI inflation falls to 3.4%, well inside the RBI's band, while GDP growth slows to 5.9%.","Inflation steady at 4.6%; MPC minutes describe the stance as 'watchful'.","Vegetable prices push CPI to 5.4%; two MPC members flag 'upside risks'.","CPI jumps to 6.3%, above the RBI's tolerance band. Governor: inflation 'must be brought back to target'.","CPI above 6.5% for a third month, and the rupee hits a record low against the dollar.","CPI crosses 7% as crude spikes; bond traders brace for 'aggressive action'."],
- bank:["Unsecured-loan defaults rise sharply; the RBI warns lenders on credit-card growth.","Coastal Bank's deposit growth lags peers; margins under pressure.","Bank results in line with expectations; analysts call the sector 'fairly valued'.","System credit growth steady at 14%; bad loans at multi-year lows.","Coastal Bank wins a large government-payments mandate; two brokers upgrade the stock.","Market talk: a foreign bank is said to be eyeing a stake in Coastal Bank."],
+ bank:["New kilns in the south add 20% capacity; cement prices slide.","Deccan Cement's volumes lag peers as fuel costs bite.","Cement results in line with expectations; analysts call the sector 'fairly valued'.","Highway and housing orders keep cement demand steady.","Deccan Cement wins a large expressway supply contract; two brokers upgrade the stock.","Market talk: a large cement group is said to be eyeing a stake in Deccan Cement."],
  volt:["Cheap imported battery cells flood the market; cell prices fall 30% in a quarter.","EV two-wheeler sales flat for the quarter; battery makers hold prices.","EV two-wheeler sales double; makers scramble for locally made cells."],
- port:["Monsoon disruptions slow cargo at east-coast ports.","Container traffic at Vizag steady through the quarter.","Record coal and container volumes at east-coast terminals."],
- resin:["Crude prices jump; resin makers struggle to pass on costs.","Crude stable; resin demand from packaging firms holds up.","Crude falls and packaging demand surges; resin margins widen."]};
+ port:["A cyclone shuts Kakinada port for two weeks; reefer cargo backs up.","Seafood and pharma exports through Kakinada steady this quarter.","Record seafood exports fill cold-storage terminals on the east coast."],
+ resin:["Crude prices jump; polymer makers struggle to pass on costs.","Crude stable; polymer demand from packaging firms holds up.","Crude falls and packaging demand surges; polymer margins widen."]};
 const NOISE=["Monsoon forecast 'normal' for the third year running.","Sensex ends the week flat in thin trading.","Government extends the PLI scheme deadline for electronics."];
 function briefing(sess,idx){const h=h53(String(sess).toUpperCase()+"|pick");const opt=["volt","port","resin"];const drop=opt[h%3];const keys=["rate","bank"].concat(opt.filter(k=>k!==drop));const items=keys.map(k=>HINT[k][idx[k]]);items.push(NOISE[Math.floor(h/3)%3]);const order=items.map((t,i)=>[h53(t+sess),t]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);return order;}
 const b64e=s=>btoa(unescape(encodeURIComponent(s))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
@@ -281,11 +305,11 @@ function compute(portfolio,ev){
       const dv=d.div*d.t,fv=ev.bank/100*d.t;econ+=dv+fv;L.pl.push([d.name+": dividend",dv]);
       if(use==="FVOCI")L.oci.push([d.name+": fair value change (never recycled)",fv]);
       else{L.pl.push([d.name+": fair value change",fv]);mtm+=fv;}
-    }else if(d.kind==="assoc"){const s=d.share*ev.volt;econ+=s;L.pl.push(["Share of profit/(loss) of associate: VoltNest (26%)",s]);}
-    else if(d.kind==="jv"){const s=d.share*ev.port;econ+=s;L.pl.push(["Share of profit of joint venture: PortLink (50%)",s]);}
-    else if(d.kind==="sub"){const p=ev.resin;econ+=d.share*p;L.pl.push(["Andhra Resins: 100% of its profit (consolidated)",p]);L.pl.push(["Less: non-controlling interest (40%)",-(1-d.share)*p]);nci+=(1-d.share)*d.na;addAssets+=d.gross+60-d.t;addDebt+=d.debt;}
-    else if(d.kind==="jo"){const s=d.share*d.profit;econ+=s;L.pl.push(["Godavari pipeline: your 40% of revenue less costs (line by line)",s]);}
-    else if(d.kind==="se"){econ+=d.profit;L.pl.push(["GreenLease SPV: profit (consolidated)",d.profit]);addAssets+=d.gross-d.t;addDebt+=d.debt;}
+    }else if(d.kind==="assoc"){const s=d.share*ev.volt;econ+=s;L.pl.push(["Share of profit/(loss) of associate: "+d.sn+" ("+pc(d.share)+")",s]);}
+    else if(d.kind==="jv"){const s=d.share*ev.port;econ+=s;L.pl.push(["Share of profit of joint venture: "+d.sn+" ("+pc(d.share)+")",s]);}
+    else if(d.kind==="sub"){const p=ev.resin;econ+=d.share*p;L.pl.push([d.sn+": 100% of its profit (consolidated)",p]);L.pl.push(["Less: non-controlling interest ("+pc(1-d.share)+")",-(1-d.share)*p]);nci+=(1-d.share)*d.na;addAssets+=d.gross+d.gw-d.t;addDebt+=d.debt;}
+    else if(d.kind==="jo"){const s=d.share*d.profit;econ+=s;L.pl.push([d.sn+": your "+pc(d.share)+" of revenue less costs (line by line)",s]);}
+    else if(d.kind==="se"){econ+=d.profit;L.pl.push([d.sn+": profit (consolidated)",d.profit]);addAssets+=d.gross-d.t;addDebt+=d.debt;}
   }
   const cashLeft=CASH-invested, cashInt=Math.max(0,cashLeft)*CASH_RATE;econ+=cashInt;
   const plInv=L.pl.reduce((a,x)=>a+x[1],0), oci=L.oci.reduce((a,x)=>a+x[1],0);
@@ -299,10 +323,10 @@ function compute(portfolio,ev){
 /* ============ year 2 ============ */
 const EV2={
  rate:{label:"RBI repo rate, Year 2",vals:[-25,0,25,50,100],fmt:v=>(v>0?"+":"")+v+" bp",def:2},
- bank:{label:"Coastal Bank share price, Year 2",vals:[-30,-15,0,15,30],fmt:v=>(v>0?"+":"")+v+"%",def:1},
- volt:{label:"VoltNest net profit, Year 2 (₹ cr)",vals:[-200,-100,0,40],fmt:v=>(v>0?"+":"")+v,def:1},
- voltRA:{label:"Recoverable amount of your 26% VoltNest stake (₹ cr)",vals:[20,60,120],fmt:v=>String(v),def:1},
- resinRA:{label:"Recoverable amount of your 60% of Andhra Resins (₹ cr)",vals:[220,270,320],fmt:v=>String(v),def:1}};
+ bank:{label:"Deccan Cement share price, Year 2",vals:[-30,-15,0,15,30],fmt:v=>(v>0?"+":"")+v+"%",def:1},
+ volt:{label:"Nexa Cells net profit, Year 2 (₹ cr)",vals:[-200,-100,0,40],fmt:v=>(v>0?"+":"")+v,def:1},
+ voltRA:{label:"Recoverable amount of your 18% Nexa Cells stake (₹ cr)",vals:[20,60,120],fmt:v=>String(v),def:1},
+ resinRA:{label:"Recoverable amount of your 45% of Godavari Polymers (₹ cr)",vals:[220,270,320],fmt:v=>String(v),def:1}};
 const EVK2=["rate","bank","volt","voltRA","resinRA"];
 function chk2(sess,n){const h=h53(String(sess).toUpperCase()+"|y2|"+n+"|"+SALT);return A[h%31]+A[Math.floor(h/31)%31];}
 function encodeEv2(sess,idx){let n=0,m=1;EVK2.forEach(k=>{n+=idx[k]*m;m*=EV2[k].vals.length;});return "YR2-"+String(n).padStart(3,"0")+"-"+chk2(sess,n);}
@@ -310,9 +334,9 @@ function decodeEv2(sess,code){let c=String(code).toUpperCase().replace(/[^A-Z0-9
 const evVals2=idx=>Object.fromEntries(EVK2.map(k=>[k,EV2[k].vals[idx[k]]]));
 function headlines2(e){const o=[];
  o.push(e.rate>0?["RBI raises the repo rate again, by "+e.rate+" bp","Bond yields rise; bond prices fall a second time."]:e.rate<0?["RBI cuts the repo rate by "+(-e.rate)+" bp","Bond yields fall; bond prices recover."]:["RBI holds the repo rate","Bond yields unchanged."]);
- o.push(["Coastal Bank shares "+(e.bank>=0?"rise ":"fall ")+Math.abs(e.bank)+"%",e.bank>=0?"Brokers see more upside.":"Profit-taking after last year's run."]);
- o.push([e.volt<0?"VoltNest loses ₹"+(-e.volt)+" cr":e.volt===0?"VoltNest breaks even":"VoltNest earns ₹"+e.volt+" cr","A new funding round values a 26% stake at ₹"+e.voltRA+" cr."]);
- o.push([e.resinRA<300?"Andhra Resins loses its biggest customer":"Andhra Resins holds its ground","An independent valuation puts a 60% stake at ₹"+e.resinRA+" cr (your carrying amount: ₹300 cr, of which goodwill ₹60 cr)."]);
+ o.push(["Deccan Cement shares "+(e.bank>=0?"rise ":"fall ")+Math.abs(e.bank)+"%",e.bank>=0?"Brokers see more upside.":"Profit-taking after last year's run."]);
+ o.push([e.volt<0?"Nexa Cells loses ₹"+(-e.volt)+" cr":e.volt===0?"Nexa Cells breaks even":"Nexa Cells earns ₹"+e.volt+" cr","A new funding round values an 18% stake at ₹"+e.voltRA+" cr."]);
+ o.push([e.resinRA<300?"Godavari Polymers loses its biggest customer":"Godavari Polymers holds its ground","An independent valuation puts a 45% stake at ₹"+e.resinRA+" cr (your carrying amount: ₹300 cr, of which goodwill ₹30 cr)."]);
  return o;}
 const SELLABLE=["gsec","psu","bank"];
 function useBox(d,box){return d.ok.includes(box)?box:d.ok[0];}
@@ -332,12 +356,12 @@ function compute2(port,ev1,e2,sell){
       else{const dv=d.div*d.t,fv2=e2.bank/100*v1;econ+=dv+fv2;L.pl.push([d.name+": dividend",dv]);if(use==="FVOCI")L.oci.push([d.name+": fair value change (never recycled)",fv2]);else L.pl.push([d.name+": fair value change",fv2]);}}
     else if(d.kind==="mf"){const inc=d.ret*d.t;econ+=inc;L.pl.push([d.name+": fair value gain (return)",inc]);}
     else if(d.kind==="assoc"){const c1=Math.max(0,d.t+d.share*ev1.volt),s2=Math.max(d.share*e2.volt,-c1),c2=c1+s2,im=Math.max(0,c2-e2.voltRA);
-      L.pl.push(["Share of profit/(loss) of associate: VoltNest (26%)",s2]);if(im>0){L.pl.push(["Impairment of investment in VoltNest (whole investment tested; carrying ₹"+f(c2)+" cr vs recoverable ₹"+e2.voltRA+" cr)",-im]);imp+=im;}econ+=s2-im;}
-    else if(d.kind==="jv"){const s=d.share*ev1.port;econ+=s;L.pl.push(["Share of profit of joint venture: PortLink (50%)",s]);}
-    else if(d.kind==="jo"){const s=d.share*d.profit;econ+=s;L.pl.push(["Godavari pipeline: your 40% of revenue less costs (line by line)",s]);}
-    else if(d.kind==="sub"){const p=ev1.resin;L.pl.push(["Andhra Resins: 100% of its profit (consolidated)",p]);L.pl.push(["Less: non-controlling interest (40%)",-(1-d.share)*p]);econ+=d.share*p;
-      const loss=Math.max(0,300-e2.resinRA),gw=Math.min(60,loss),oth=loss-gw;if(gw>0)L.pl.push(["Goodwill impairment: Andhra Resins (can never be reversed)",-gw]);if(oth>0)L.pl.push(["Impairment of Andhra Resins' other assets (your share)",-oth]);imp+=loss;econ-=loss;}
-    else if(d.kind==="se"){econ+=d.profit;L.pl.push(["GreenLease SPV: profit (consolidated)",d.profit]);}}
+      L.pl.push(["Share of profit/(loss) of associate: "+d.sn+" ("+pc(d.share)+")",s2]);if(im>0){L.pl.push(["Impairment of investment in "+d.sn+" (whole investment tested; carrying ₹"+f(c2)+" cr vs recoverable ₹"+e2.voltRA+" cr)",-im]);imp+=im;}econ+=s2-im;}
+    else if(d.kind==="jv"){const s=d.share*ev1.port;econ+=s;L.pl.push(["Share of profit of joint venture: "+d.sn+" ("+pc(d.share)+")",s]);}
+    else if(d.kind==="jo"){const s=d.share*d.profit;econ+=s;L.pl.push([d.sn+": your "+pc(d.share)+" of revenue less costs (line by line)",s]);}
+    else if(d.kind==="sub"){const p=ev1.resin;L.pl.push([d.sn+": 100% of its profit (consolidated)",p]);L.pl.push(["Less: non-controlling interest ("+pc(1-d.share)+")",-(1-d.share)*p]);econ+=d.share*p;
+      const loss=Math.max(0,d.t-e2.resinRA),gw=Math.min(d.gw,loss),oth=loss-gw;if(gw>0)L.pl.push(["Goodwill impairment: "+d.sn+" (can never be reversed)",-gw]);if(oth>0)L.pl.push(["Impairment of "+d.sn+"'s other assets (your share)",-oth]);imp+=loss;econ-=loss;}
+    else if(d.kind==="se"){econ+=d.profit;L.pl.push([d.sn+": profit (consolidated)",d.profit]);}}
   const cashBal=Math.max(0,CASH-invested)+cash,cashInt=cashBal*CASH_RATE;econ+=cashInt;
   const pat=OPAT+cashInt+L.pl.reduce((a,x)=>a+x[1],0),oci=L.oci.reduce((a,x)=>a+x[1],0);
   return {L,econ,pat,oci,recyc,imp,hidden,cashBal,cashInt,an:[r1(pat),r1(recyc),r1(imp)]};
@@ -346,7 +370,7 @@ function y2plan(){
   const pp=P(),ev1=evVals(pp.ev);pp.sell=pp.sell||{};
   const held=DEALS.filter(d=>d.id in pp.port);
   app.innerHTML=`<div class="stack"><div><p class="eyebrow">Year 2 · You are the investment manager again</p><h2>Prices are where Year 1 left them. Decide what to sell before the market moves again.</h2>
-   <p class="muted" style="max-width:70ch;margin-top:6px">Bonds and the bank shares can be sold today at their current value; the cash earns 6%. Strategic stakes stay for the year. Think about where each sale will show up in your accounts.</p></div>
+   <p class="muted" style="max-width:70ch;margin-top:6px">Bonds and the Deccan Cement shares can be sold today at their current value; the cash earns 6%. Strategic stakes stay for the year. Think about where each sale will show up in your accounts.</p></div>
    <div class="panel tw"><table class="st">${held.map(d=>{const box=useBox(d,pp.port[d.id]);const can=SELLABLE.includes(d.id);return `<tr><td><b>${esc(d.name)}</b><br><span class="small muted">${esc(BOX[box])}</span></td><td class="n">₹${f(y1Value(d,ev1))} cr</td><td>${can?`<label class="toggle"><input type="checkbox" data-sell="${d.id}"${pp.sell[d.id]?" checked":""}> Sell now</label>`:`<span class="small muted">Held this year</span>`}</td></tr>`;}).join("")}</table></div>
    <div class="row"><button type="button" class="primary" id="l2">Lock Year-2 decisions</button></div></div>`;
   app.querySelectorAll("[data-sell]").forEach(c=>c.onchange=()=>{pp.sell[c.dataset.sell]=c.checked;saveP();});
@@ -384,14 +408,14 @@ function y2result(){
   const pp=P(),Y=y1(pp),ev1=Y.ev,e2=evVals2(pp.ev2),R=compute2(pp.port,ev1,e2,pp.sell||{});
   const ok=R.an.map((v,i)=>Math.abs(pp.ans2.g[i]-v)<=Math.max(1,Math.abs(v)*.01));const an2=ok.filter(Boolean).length;
   const s2=Math.round(R.econ)+30*an2,total=Y.score+s2;
-  const tk=makeToken({y:2,s:S.session,t:S.team,econ:r1(Y.R.econ+R.econ),pat:r1(Y.R.pat),pat2:r1(R.pat),roe:Math.round(Y.R.roe*10000)/10000,oci:r1(Y.R.oci),cr:Y.R.correct,wr:Y.R.wrong,an:Y.an+an2,st:stagePoints(pp),score:total+stagePoints(pp)});
+  const tk=makeToken({y:2,s:S.session,t:S.team,econ:r1(Y.R.econ+R.econ),pat:r1(Y.R.pat),pat2:r1(R.pat),roe:Math.round(Y.R.roe*10000)/10000,oci:r1(Y.R.oci),cr:Y.R.correct,wr:Y.R.wrong,an:Y.an+an2,st:stagePoints(pp),score:total+stagePoints(pp)});sendTok(tk,"Year 2 final");
   const story=[];const sold=Object.keys(pp.sell||{}).filter(k=>pp.sell[k]&&k in pp.port);
   sold.forEach(id=>{const d=DEALS.find(x=>x.id===id),b=useBox(d,pp.port[id]);
     if(d.kind==="debt"&&b==="AC")story.push(`${d.name}: the Year-1 rate loss you never saw finally hit profit when you sold.`);
     if(d.kind==="debt"&&b==="FVOCI")story.push(`${d.name}: the OCI reserve was recycled into profit on sale.`);
-    if(d.kind==="eq"&&b==="FVOCI")story.push(`Coastal Bank shares: you sold, yet the gain never reached profit. It moved straight from OCI to retained earnings.`);
+    if(d.kind==="eq"&&b==="FVOCI")story.push(`Deccan Cement shares: you sold, yet the gain never reached profit. It moved straight from OCI to retained earnings.`);
     if(b==="FVTPL")story.push(`${d.name}: already at fair value, so selling changed nothing in profit.`);});
-  if(R.imp>0)story.push(`Impairments of ₹${f(R.imp)} cr hit profit this year.`+(pp.port.resin&&e2.resinRA<300?` The goodwill part can never be reversed, even if Andhra Resins recovers.`:""));
+  if(R.imp>0)story.push(`Impairments of ₹${f(R.imp)} cr hit profit this year.`+(pp.port.resin&&e2.resinRA<300?` The goodwill part can never be reversed, even if Godavari Polymers recovers.`:""));
   app.innerHTML=`<div class="stack"><div><p class="eyebrow">Two-year verdict · Team ${esc(S.team)}</p><h2>Year 2 scored.</h2></div>
    <div class="kpis"><div><p class="small muted">Economic return, Year 2</p><div class="score">₹${f(R.econ)}</div></div><div><p class="small muted">Reported PAT, Year 2</p><div class="score">₹${f(R.pat)}</div><p class="small muted">Year 1: ₹${f(Y.R.pat)} cr</p></div><div><p class="small muted">Year-2 score</p><div class="score">${f(s2)}</div></div><div><p class="small muted">Two-year score</p><div class="score">${f(total)}</div></div></div>
    <div class="panel stack"><h3>Your analysis</h3>${["Year-2 PAT","Realised or recycled on sale","Impairment losses"].map((l,i)=>`<div class="${ok[i]?"okbox":"nobox"}"><b>${l}:</b> you said ${f(pp.ans2.g[i])}, the answer is <b>${f(R.an[i])}</b>.</div>`).join("")}</div>
@@ -407,7 +431,7 @@ function iRun2(p){
   p.innerHTML=`<div class="stack"><div class="codes"><div class="panel stack"><p class="eyebrow">Year 2 · Market code</p>${S.ev2Shown?`<div class="big" style="color:var(--coral)">${encodeEv2(S.session,S.ev2Idx)}</div><p class="muted">Teams type this after they lock their Year-2 sell decisions.</p><button type="button" id="h2">Hide code</button>`:`<p class="muted">When teams have finished Year 1, tell them to press <b>Go to Year 2</b>, decide what to sell, and lock. Then reveal this code.</p><button type="button" class="primary" id="rv2">Reveal Year-2 code</button>`}</div></div>
    <details class="panel" id="mset2"${S.set2Open?" open":""}><summary style="cursor:pointer;font-weight:700">Year-2 market settings: open only when the projector is off</summary><div class="stack" style="margin-top:14px">
    ${EVK2.map(k=>`<div class="row" style="justify-content:space-between"><span style="font-weight:600;min-width:220px">${EV2[k].label}</span><div class="seg" role="group" aria-label="${EV2[k].label}">${EV2[k].vals.map((v,i)=>`<button type="button" data-k2="${k}" data-i="${i}" aria-pressed="${S.ev2Idx[k]===i}">${EV2[k].fmt(v)}</button>`).join("")}</div></div>`).join("")}
-   <p class="small muted">VoltNest is impaired when your carrying amount exceeds the recoverable amount. Andhra Resins: your carrying amount is ₹300 cr (₹240 cr net assets + ₹60 cr goodwill); any shortfall hits goodwill first.</p>
+   <p class="small muted">Nexa Cells is impaired when your carrying amount exceeds the recoverable amount. Godavari Polymers: your carrying amount is ₹300 cr (₹270 cr net assets + ₹30 cr goodwill); any shortfall hits goodwill first.</p>
    <div class="news">${headlines2(e2).map(h=>`<div><b>${esc(h[0])}</b><br><span class="small muted">${esc(h[1])}</span></div>`).join("")}</div></div></details></div>`;
   p.querySelectorAll("[data-k2]").forEach(b=>b.onclick=()=>{S.ev2Idx[b.dataset.k2]=+b.dataset.i;save();render();});
   mset2.ontoggle=()=>{S.set2Open=mset2.open;};
@@ -455,13 +479,13 @@ function stageCode(sess,n,ai){return "S"+n+"-"+chk(sess,(ai&&n<6?3000:1000)+n);}
 function checkStageCode(sess,n,code){const c=String(code).toUpperCase().replace(/[^A-Z0-9]/g,"");return c==="S"+n+chk(sess,1000+n)?1:(n<6&&c==="S"+n+chk(sess,3000+n))?2:0;}
 function stageEval(st,port){
   const rows=[];let pl=0,oci=0,hid=0,rev=0,carry=0,gw=0,nci=0,borr=BORR,right=0,wrong=0;
-  for(const id of st.deals){const d=DEALS.find(x=>x.id===id),box=port[id],ok=st.ok[id].includes(box),use=ok?box:st.ok[id][0];if(ok)right++;else wrong++;
+  for(const id of st.deals){const d=SDEALS.find(x=>x.id===id),box=port[id],ok=st.ok[id].includes(box),use=ok?box:st.ok[id][0];if(ok)right++;else wrong++;
     const r=stageDeal(st.n,id,use);rows.push({d,box,use,ok,r});pl+=r.pl||0;oci+=r.oci||0;hid+=r.hid||0;rev+=r.rev||0;carry+=r.carry||0;gw+=r.gw||0;nci+=r.nci||0;borr+=r.addDebt||0;}
   const v={pl:r1(pl),oci:r1(oci),hid:r1(hid),rev:r1(rev),carry:r1(carry),gw:r1(gw),nci:r1(nci),borr:r1(borr),de:Math.round(borr/EQUITY*100)/100};
   return {rows,v,right,wrong};
 }
 function stageDeal(n,id,box){
-  const d=DEALS.find(x=>x.id===id);
+  const d=SDEALS.find(x=>x.id===id);
   if(n===1){
     if(d.kind==="debt"){const inc=d.coupon*d.t,fv=-d.dur*50/10000*d.t;return box==="AC"?{pl:inc,hid:fv,lines:[["Interest (P&L)",inc],["Fair value change: not recognised",fv]]}:box==="FVOCI"?{pl:inc,oci:fv,lines:[["Interest (P&L)",inc],["Fair value change (OCI)",fv]]}:{pl:inc+fv,lines:[["Interest (P&L)",inc],["Fair value change (P&L)",fv]]};}
     if(d.kind==="mf"){const inc=d.ret*d.t;return {pl:inc,lines:[["Fair value gain / return (P&L)",inc]]};}
@@ -482,6 +506,7 @@ function stagePoints(pp){return Object.values(pp.stg||{}).reduce((a,x)=>a+(x.don
 function hub(){
   const pp=SP();
   if(RESEARCH){if(!pp.consent){consent();return;}if(!pp.pre){pretest();return;}if(pp.stg[5]&&pp.stg[5].done&&!pp.post){posttest();return;}}
+  if(Object.values(pp.stg).some(x=>x.done)&&!pp.locked)sendTok(makeToken({y:0,s:S.session,t:S.team,st:stagePoints(pp),score:stagePoints(pp)}),"Stages "+stagePoints(pp));
   app.innerHTML=`<div class="stack"><div><p class="eyebrow">Team ${esc(S.team)} · Session ${esc(S.session)}</p><h2>Six stages. Learn each box, then run the full desk.</h2>
    <p class="muted" style="max-width:70ch;margin-top:6px">Your instructor opens each stage with a code on the projector. Stages 1–5 teach one Ind AS box at a time; stage 6 puts them all together.</p></div>
    <div class="stack">${STG.map(st=>{const x=pp.stg[st.n]||{};const open=x.open||(st.n===6&&pp.s6);const done=st.n<6?x.done:!!pp.ans;
@@ -499,7 +524,7 @@ function stage(){
   if(!x.t0){x.t0=Date.now();saveP();}x.conf=x.conf||{};const ai=aiOK(st.n);
   app.innerHTML=`<div class="stack"><div><p class="eyebrow" style="color:${st.ink}">Stage ${st.n} · ${esc(st.std)}</p><h2>${esc(st.title)}</h2><p class="muted" style="max-width:70ch;margin-top:6px">${esc(st.intro)}</p></div>
 
-   <div class="deals">${st.deals.map(id=>{const d=DEALS.find(q=>q.id===id);return `<div class="ticket on"><div class="stub"><span class="u">ticket</span><span class="amt">₹${d.t}</span><span class="u">crore</span></div><div class="tbody"><span class="tag ${TAGC[d.tag]}">${esc(d.label)}</span><h3>${esc(d.name)}</h3><ul class="facts">${d.facts.map(f_=>`<li>${esc(f_)}</li>`).join("")}</ul>
+   <div class="deals">${st.deals.map(id=>{const d=SDEALS.find(q=>q.id===id);return `<div class="ticket on"><div class="stub"><span class="u">ticket</span><span class="amt">₹${d.t}</span><span class="u">crore</span></div><div class="tbody"><span class="tag ${TAGC[d.tag]}">${esc(d.label)}</span><h3>${esc(d.name)}</h3><ul class="facts">${d.facts.map(f_=>`<li>${esc(f_)}</li>`).join("")}</ul>
     <div class="pick"><label for="sb-${id}" style="margin:0">Account for it as</label><select id="sb-${id}" data-sb="${id}"><option value="">Choose…</option>${st.opts.map(k=>`<option value="${k}"${x.port[id]===k?" selected":""}>${BOX[k]}</option>`).join("")}</select></div>${RESEARCH?`<div class="conf"><span class="small muted">Confidence</span>${confSel("cf-"+id,x.conf[id])}</div>`:""}</div></div>`;}).join("")}</div>
    ${RESEARCH?`<div class="panel stack"><h3>Memo to the CFO</h3><label for="smemo" class="small muted" style="font-weight:400">In 40–80 words, tell the CFO how you will account for ${st.deals.length>1?"these deals":"this deal"} and why. Name the standard and the fact that decided it.</label><textarea id="smemo">${esc(x.memo||"")}</textarea><p class="small muted" id="mwc">${words(x.memo)} words</p>
     <div><p style="margin-bottom:4px"><b>How did your team use AI in this stage?</b></p><div class="opts">${Object.entries(AIU).map(([k,t])=>`<label><input type="radio" name="aiu" value="${k}"${x.aiu===k?" checked":""}> ${t}</label>`).join("")}</div></div>
@@ -528,7 +553,7 @@ function stageRes(){
     ${done?"":`${RESEARCH?`<div class="conf"><span class="small muted">How sure are you of these answers?</span>${confSel("sqc",x.aconf)}</div>`:""}<div class="row"><button class="primary" type="submit">Check my answers</button></div><p class="err" id="sqe" hidden></p>`}</form>
    ${done?`<div class="panel stack"><h3>Answers</h3>${st.qs.map(([l,k],i)=>`<div class="${okv[i]?"okbox":"nobox"}"><b>${esc(l)}:</b> you said ${k==="de"?Number(x.ans[i]).toFixed(2):f(x.ans[i])}, the answer is <b>${k==="de"?E.v[k].toFixed(2):f(E.v[k])}</b>.</div>`).join("")}</div>
     <div class="panel stack" style="border-left:6px solid ${st.color}"><h3>What to remember</h3><ul style="margin:0;padding-left:20px" class="stack">${st.take.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>
-    <div class="panel tw"><h3 style="margin-bottom:8px">The same deal under every option</h3><table class="st"><tr><td><b>Deal</b></td>${st.opts.map(k=>`<td><b>${esc(BOX[k])}</b></td>`).join("")}</tr>${st.deals.map(id=>{const d=DEALS.find(q=>q.id===id);return `<tr><td>${esc(d.name)}</td>${st.opts.map(k=>{const okk=st.ok[id].includes(k);const r=stageDeal(st.n,id,k);return `<td class="small">${okk?`P&L ${f(r.pl||0)}${r.oci?` · OCI ${f(r.oci)}`:""}${r.hid?` · hidden ${f(r.hid)}`:""}${r.rev?` · revenue ${f(r.rev)}`:""}${r.addDebt?` · debt +${f(r.addDebt)}`:""}`:`<span class="muted">Not allowed</span>`}</td>`;}).join("")}</tr>`;}).join("")}</table></div>
+    <div class="panel tw"><h3 style="margin-bottom:8px">The same deal under every option</h3><table class="st"><tr><td><b>Deal</b></td>${st.opts.map(k=>`<td><b>${esc(BOX[k])}</b></td>`).join("")}</tr>${st.deals.map(id=>{const d=SDEALS.find(q=>q.id===id);return `<tr><td>${esc(d.name)}</td>${st.opts.map(k=>{const okk=st.ok[id].includes(k);const r=stageDeal(st.n,id,k);return `<td class="small">${okk?`P&L ${f(r.pl||0)}${r.oci?` · OCI ${f(r.oci)}`:""}${r.hid?` · hidden ${f(r.hid)}`:""}${r.rev?` · revenue ${f(r.rev)}`:""}${r.addDebt?` · debt +${f(r.addDebt)}`:""}`:`<span class="muted">Not allowed</span>`}</td>`;}).join("")}</tr>`;}).join("")}</table></div>
     <div class="row"><span class="small muted">Stage points: ${x.score} (20 per correct box, 30 per correct answer)</span><button type="button" class="primary" id="sbk">Back to stages</button></div>`:""}
   </div>`;
   if(!done)sqf.onsubmit=e=>{e.preventDefault();const g=st.qs.map((q,i)=>parseNum(document.getElementById("sq"+i).value));if(g.some(v=>!isFinite(v))){sqe.hidden=false;sqe.textContent="Enter a number for every question.";return;}
@@ -544,7 +569,7 @@ function iStages(p){
   p.innerHTML=`<div class="stack"><p class="muted" style="max-width:72ch">Open one stage at a time. Each stage takes 8–10 minutes: teams choose, see what happens, answer two to four questions, and read the takeaways. Stage 6 is the full desk; after opening it, use the Run Year 1 and Run Year 2 tabs as before.</p>
    <div class="stack">${STG.map(st=>`<div class="panel" style="border-left:6px solid ${st.color}"><div class="row" style="justify-content:space-between"><div style="flex:1 1 260px;min-width:0"><p class="eyebrow" style="color:${st.ink}">Stage ${st.n} · ${esc(st.std)}</p><h3>${esc(st.title)}</h3></div>
     <div class="row">${RESEARCH&&st.n<6&&!S.stShown[st.n]?`<label class="small" style="display:flex;gap:6px;align-items:center;margin:0;font-weight:400"><input type="checkbox" data-ai="${st.n}" style="width:auto"${S.stAI[st.n]?" checked":""}> AI allowed</label>`:""}${S.stShown[st.n]?`<span class="big" style="font-size:clamp(26px,4vw,44px)">${stageCode(S.session,st.n,S.stAI[st.n])}</span><button type="button" data-hide="${st.n}">Hide</button>`:`<button type="button" class="primary" data-show="${st.n}">Show stage ${st.n} code</button>`}</div></div>
-    ${st.n<6?`<details style="margin-top:8px"><summary class="small" style="cursor:pointer">Answer key for stage ${st.n}</summary><ul class="small" style="margin:6px 0 0;padding-left:20px">${st.deals.map(id=>`<li>${esc(DEALS.find(d=>d.id===id).name)}: ${st.ok[id].map(k=>BOX[k]).join(" or ")}</li>`).join("")}${st.take.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></details>`:""}</div>`).join("")}</div></div>`;
+    ${st.n<6?`<details style="margin-top:8px"><summary class="small" style="cursor:pointer">Answer key for stage ${st.n}</summary><ul class="small" style="margin:6px 0 0;padding-left:20px">${st.deals.map(id=>`<li>${esc(SDEALS.find(d=>d.id===id).name)}: ${st.ok[id].map(k=>BOX[k]).join(" or ")}</li>`).join("")}${st.take.map(t=>`<li>${esc(t)}</li>`).join("")}</ul></details>`:""}</div>`).join("")}</div></div>`;
   if(RESEARCH){p.insertAdjacentHTML("afterbegin",`<details class="panel" style="border-left:6px solid #1B6FA8"><summary class="small" style="cursor:pointer"><b>Research mode: how the AI setting works</b></summary><p class="small" style="margin-top:8px">For each stage, tick <b>AI allowed</b> or leave it unticked <i>before</i> you show the code. The code itself tells the game which condition applies; students never see it on their screens, so announce it aloud. Teams that already opened a stage keep the condition of the code they used. Consent, the warm-up check, confidence ratings, CFO memos, AI prompts, timings and the final check go to the <b>Research</b> tab of your Google Sheet with team name, member names and roll numbers (consenting teams only).</p></details>`);}
   p.querySelectorAll("[data-ai]").forEach(c=>c.onchange=()=>{S.stAI[c.dataset.ai]=c.checked;save();});
   p.querySelectorAll("[data-show]").forEach(b=>b.onclick=()=>{S.stShown[b.dataset.show]=true;render();});
@@ -554,7 +579,7 @@ function iStages(p){
 /* ============ state ============ */
 let S={view:"home"};let tick=null;
 const app=document.getElementById("app"),chips=document.getElementById("chips");
-const keep=()=>({stg:S.stg,view:S.view,role:S.role,session:S.session,team:S.team,itab:S.itab,evIdx:S.evIdx,ev2Idx:S.ev2Idx,lbText:S.lbText,stAI:S.stAI});
+const keep=()=>({stg:S.stg,view:S.view,role:S.role,session:S.session,team:S.team,itab:S.itab,evIdx:S.evIdx,ev2Idx:S.ev2Idx,lbText:S.lbText,stAI:S.stAI,lbAuto:S.lbAuto});
 function roleKey(r){return r==="instructor"?"dd-host":r==="student"?"dd-team":null;}
 function save(){const k=roleKey(S.role);if(k)store.set(k,keep());const h=S.role==="instructor"?"#host":S.role==="student"?"#team":"";try{if(location.hash!==h)history.replaceState(null,"",location.pathname+location.search+h);}catch(e){}}
 function studentRoute(){const pp=P();if(!pp.s6&&!pp.locked)return "hub";return pp.ans2?"y2result":pp.ev2?"y2analyst":pp.y2locked?"y2wait":pp.ans?"result":pp.ev?"analyst":pp.locked?"wait":"desk";}
@@ -565,10 +590,10 @@ function saveP(){store.set(pk(),S._p);}
 function headlines(ev){
   const out=[];
   out.push(ev.rate>0?["RBI raises the repo rate by "+ev.rate+" bp","Bond yields rise by the same amount; bond prices fall."]:ev.rate<0?["RBI cuts the repo rate by "+(-ev.rate)+" bp","Bond yields fall; bond prices rise."]:["RBI holds the repo rate","Bond yields unchanged."]);
-  out.push(["Coastal Bank shares "+(ev.bank>=0?"rise ":"fall ")+Math.abs(ev.bank)+"%",ev.bank>=0?"Banking stocks rally on loan growth.":"Banking stocks slide on asset-quality worries."]);
-  out.push([ev.volt<0?"VoltNest posts a ₹"+(-ev.volt)+" cr loss":ev.volt===0?"VoltNest breaks even":"VoltNest earns ₹"+ev.volt+" cr",ev.volt<0?"Cell prices crash as imports flood the market.":"Orders from two-wheeler makers pick up."]);
-  out.push(["PortLink Terminals earns ₹"+ev.port+" cr","Cargo volumes "+(ev.port>=60?"hit a record.":"stay soft.")]);
-  out.push(["Andhra Resins earns ₹"+ev.resin+" cr","Resin demand "+(ev.resin>=80?"holds up.":"weakens.")]);
+  out.push(["Deccan Cement shares "+(ev.bank>=0?"rise ":"fall ")+Math.abs(ev.bank)+"%",ev.bank>=0?"Cement stocks rally on infrastructure orders.":"Cement stocks slide on oversupply worries."]);
+  out.push([ev.volt<0?"Nexa Cells posts a ₹"+(-ev.volt)+" cr loss":ev.volt===0?"Nexa Cells breaks even":"Nexa Cells earns ₹"+ev.volt+" cr",ev.volt<0?"Battery-pack prices crash as imports flood the market.":"Orders from two-wheeler makers pick up."]);
+  out.push(["Kakinada Cold Terminals earns ₹"+ev.port+" cr","Reefer cargo volumes "+(ev.port>=60?"hit a record.":"stay soft.")]);
+  out.push(["Godavari Polymers earns ₹"+ev.resin+" cr","Polymer demand "+(ev.resin>=80?"holds up.":"weakens.")]);
   return out;
 }
 function setWire(ev){const w=document.getElementById("wire");if(!ev){w.hidden=true;return;}w.hidden=false;document.getElementById("wireText").textContent=headlines(ev).map(h=>"● "+h[0].toUpperCase()).join("     ");}
@@ -644,26 +669,33 @@ function iKey(p){
   const ev=evVals(S.evIdx||{});
   p.innerHTML=`<div class="stack"><p class="muted">The correct accounting for each deal, and what this market does to it. Use it for the debrief.</p>
    <div class="tw panel"><table class="st"><tr><td><b>Deal</b></td><td><b>Correct box</b></td><td><b>Why</b></td></tr>
-   ${DEALS.map(d=>`<tr><td>${esc(d.name)}</td><td>${d.ok.map(k=>BOX[k]).join(" or ")}</td><td class="small">${esc(WHY[d.id])}</td></tr>`).join("")}</table></div>
+   ${DEALS.map(d=>`<tr><td>${esc(d.name)}</td><td>${d.ok.map(k=>BOX[k]).join(" or ")}</td><td class="small">${esc(WHY6[d.id])}</td></tr>`).join("")}</table></div>
    <div class="panel stack"><h3>Debrief questions</h3><ol style="margin:0;padding-left:20px" class="stack">
     <li>Which team had the highest economic return, and which had the highest reported ROE? Are they the same team?</li>
-    <li>Two teams held the Government bond: one at amortised cost, one at FVTPL. After the RBI move, whose profit fell? Whose wealth fell?</li>
-    <li>Who chose FVOCI for the bank shares? Where did the ${f(ev.bank/100*200)} cr go, and will it ever reach profit?</li>
-    <li>Teams that bought Andhra Resins: what happened to revenue, debt and leverage? Why is the 40% deducted from profit?</li>
-    <li>GreenLease SPV: only 2% of the shares. Why does ₹500 cr of debt come onto your balance sheet?</li>
-    <li>Pipeline vs PortLink: both are shared, so why is one a single equity-method line and the other line by line?</li></ol></div>
+    <li>Two teams held the G-sec: one at amortised cost, one at FVTPL. After the RBI move, whose profit fell? Whose wealth fell?</li>
+    <li>Who chose FVOCI for Deccan Cement? Where did the ${f(ev.bank/100*200)} cr go, and will it ever reach profit?</li>
+    <li>Nexa Cells is only 18%: why is it an associate? Kakinada Cold is 55%: why is it not a subsidiary? Godavari Polymers is only 45%: why is it consolidated?</li>
+    <li>The NBFC bonds: why couldn't you hold them at amortised cost? The Volta debentures: why only FVTPL?</li>
+    <li>Teams that bought Godavari Polymers: what happened to revenue, debt and leverage? Why is 55% deducted from profit?</li>
+    <li>Suryoday Trust: only 1% of the units. Why does ₹500 cr of debt come onto your balance sheet?</li>
+    <li>The 'Coastal LNG Joint Venture' vs Kakinada Cold: why is the one called a joint venture a joint operation, and the other a joint venture?</li></ol></div>
    <div class="panel stack"><h3>Year-2 debrief</h3><ol style="margin:0;padding-left:20px" class="stack">
     <li>Teams that sold amortised-cost bonds: where did the Year-1 rate loss finally appear?</li>
-    <li>FVOCI bonds recycle on sale; FVOCI bank shares never do. Why the difference?</li>
-    <li>VoltNest: why is the whole investment tested, not the goodwill inside it, and can that impairment reverse?</li>
-    <li>Andhra Resins: if the valuation recovers next year, can the goodwill impairment be reversed?</li>
+    <li>FVOCI bonds (the NBFC bonds) recycle on sale; FVOCI shares (Deccan Cement) never do. Why the difference?</li>
+    <li>Nexa Cells: why is the whole investment tested, not the goodwill inside it, and can that impairment reverse?</li>
+    <li>Godavari Polymers: if the valuation recovers next year, can the goodwill impairment be reversed?</li>
     <li>Whose two-year profit was smoothest, and was their economic return the best?</li></ol></div></div>`;
 }
 const WHY={gsec:"SPPI debt: the business model decides. Hold to collect = amortised cost; collect and sell = FVOCI; trading = FVTPL.",psu:"Same as the G-sec.",mf:"Fund units fail the SPPI test, so FVTPL only.",bank:"Equity: FVTPL by default, or the irrevocable FVOCI election. Never amortised cost.",volt:"2 of 7 board seats and supplier dependence: significant influence (Ind AS 28).",port:"Joint control by contract over a separate vehicle: joint venture, equity method (Ind AS 111).",resin:"4 of 7 directors: control. Consolidate line by line with goodwill and non-controlling interest (Ind AS 103/110).",pipe:"Each partner has rights to the assets and obligations for the liabilities, with no separate vehicle: a joint operation. Bring in your 40% of assets, liabilities, revenue and costs line by line (Ind AS 111).",spv:"Power over relevant activities plus exposure to all variable returns: control of a structured entity, even at 2% (Ind AS 110)."};
+const WHY6={gsec:"SPPI debt: the business model decides. Hold to collect = amortised cost; collect and sell = FVOCI; trading = FVTPL.",psu:"SPPI debt, but held to collect AND sell: the liquidity book sells whenever cash is needed. That business model means FVOCI, not amortised cost.",mf:"Convertible debentures fail the SPPI test: their payoff depends on Volta's share price. FVTPL only.",bank:"Equity: FVTPL by default, or the irrevocable FVOCI election. Never amortised cost.",volt:"Below 20%, but a board seat, a role in technology decisions, essential supplies and shared engineers give significant influence: associate, equity method (Ind AS 28).",port:"55% is not control here: the partner's veto over the budget, capex and CEO means decisions need both parties. Joint control of a separate company: joint venture, equity method (Ind AS 111).",resin:"Only 45%, but the rest is widely dispersed and you appoint 5 of 9 directors and the CEO: de facto control (Ind AS 110). Consolidate with goodwill and non-controlling interest.",pipe:"Despite the name, no company exists: each partner owns its share of the terminal and pays its share of the costs. Joint operation: bring in your 40% line by line (Ind AS 111).",spv:"Power over the relevant activities (choosing projects) plus exposure to all the variable returns (incentive fee, guarantee): control of a structured entity at 1% (Ind AS 110)."};
 function iLb(p){
   p.innerHTML=`<div class="stack"><div class="panel stack"><label for="tk">Paste the teams' result tokens (a whole chat or form export is fine)</label><textarea id="tk" placeholder="DD1.eyJ...">${esc(S.lbText||"")}</textarea>
-   <div class="row"><button type="button" class="primary" id="mk">Build leaderboard</button><button type="button" id="cl">Clear</button><span class="small muted" id="msg"></span></div></div><div id="out"></div></div>`;
-  mk.onclick=()=>{S.lbText=tk.value;save();build();};cl.onclick=()=>{S.lbText="";save();tk.value="";out.innerHTML="";msg.textContent="";};
+   <div class="row"><button type="button" class="primary" id="pull">Get tokens from Google Sheet</button><label class="toggle" style="margin:0"><input type="checkbox" id="auto"${S.lbAuto?" checked":""}> Refresh every 20 s</label><button type="button" id="mk">Build from pasted tokens</button><button type="button" id="cl">Clear</button><span class="small muted" id="msg"></span></div><p class="small muted" style="margin:0">Teams' tokens are sent to your Google Sheet automatically when they finish the stages, Year 1 or Year 2. Pasting still works as a backup.</p></div><div id="out"></div></div>`;
+  mk.onclick=()=>{S.lbText=tk.value;save();build();};
+  const pull=()=>{msg.textContent="Fetching from Google Sheet…";pullTokens((d,err)=>{if(!document.getElementById("tk"))return;if(!d){msg.textContent=err||"No answer.";return;}const have=new Set((tk.value.match(/DD1\.[A-Za-z0-9_-]+\.[a-z0-9]+/g)||[]));(d.tokens||[]).forEach(x=>have.add(x));tk.value=[...have].join("\n");S.lbText=tk.value;save();build();msg.textContent+=" · updated "+new Date().toLocaleTimeString();});};
+  document.getElementById("pull").onclick=pull;
+  auto.onchange=()=>{S.lbAuto=auto.checked;save();clearInterval(tick);if(auto.checked){pull();tick=setInterval(pull,20000);}};
+  if(S.lbAuto){clearInterval(tick);tick=setInterval(pull,20000);}cl.onclick=()=>{S.lbText="";save();tk.value="";out.innerHTML="";msg.textContent="";};
   function build(){
     const found=tk.value.match(/DD1\.[A-Za-z0-9_-]+\.[a-z0-9]+/g)||[];const T={};let bad=0,oth=0;
     found.forEach(x=>{const d=readToken(x);if(!d){bad++;return;}if(String(d.s).toUpperCase()!==S.session){oth++;return;}const k=String(d.t).trim().toLowerCase();const yy=v=>v.y==null?1:v.y;if(!T[k]||yy(d)>yy(T[k]))T[k]=d;});
@@ -722,7 +754,7 @@ function analyst(){
   const pp=P(),ev=evVals(pp.ev),R=compute(pp.port,ev);
   app.innerHTML=`<div class="stack">
    <div><p class="eyebrow">Market wire</p><div class="news" style="margin-top:8px">${headlines(ev).map(h=>`<div><b>${esc(h[0])}</b><br><span class="small muted">${esc(h[1])}</span></div>`).join("")}</div></div>
-   ${R.L.flags.length?`<div class="stack">${R.L.flags.map(x=>`<div class="flag"><b>Auditor's correction:</b> ${esc(x.d.name)} can't be accounted for as "${esc(BOX[x.box])}". The statements below use ${esc(BOX[x.use])}. ${esc(WHY[x.d.id])}</div>`).join("")}</div>`:""}
+   ${R.L.flags.length?`<div class="stack">${R.L.flags.map(x=>`<div class="flag"><b>Auditor's correction:</b> ${esc(x.d.name)} can't be accounted for as "${esc(BOX[x.box])}". The statements below use ${esc(BOX[x.use])}. ${esc(WHY6[x.d.id])}</div>`).join("")}</div>`:""}
    <div><p class="eyebrow">Round 2 · You are the financial analyst</p><h2>Here are your statements. Answer four questions before you see the verdict.</h2></div>
    <div class="grid2">
     <div class="panel tw"><h3 style="margin-bottom:8px">Profit and loss (₹ cr)</h3><table class="st">
@@ -757,15 +789,15 @@ function fmtA(v,i){return i===3?Number(v).toFixed(2):f(v);}
 function result(){
   const pp=P(),Y=y1(pp),ev=Y.ev,R=Y.R,ok=Y.ok,an=Y.an,score=Y.score;
   const labels=["PAT attributable to owners","Total OCI","Core PAT","Debt-to-equity"];
-  const stp=stagePoints(pp);const tk=makeToken({y:1,s:S.session,t:S.team,econ:r1(R.econ),pat:r1(R.pat),roe:Math.round(R.roe*10000)/10000,oci:r1(R.oci),cr:R.correct,wr:R.wrong,an,st:stp,score:score+stp});
+  const stp=stagePoints(pp);const tk=makeToken({y:1,s:S.session,t:S.team,econ:r1(R.econ),pat:r1(R.pat),roe:Math.round(R.roe*10000)/10000,oci:r1(R.oci),cr:R.correct,wr:R.wrong,an,st:stp,score:score+stp});sendTok(tk,"Year 1 final");
   const story=[];
   if(R.hidden)story.push(`Your amortised-cost bonds lost ₹${f(-R.hidden)} cr of market value that appears nowhere in profit or OCI.`);
   if(R.mtm)story.push(`₹${f(R.mtm)} cr of your profit is fair value change on FVTPL holdings: it can reverse next quarter.`);
   if(R.oci)story.push(`₹${f(R.oci)} cr sits in OCI, outside profit.`);
-  if(pp.port.resin)story.push(`Consolidating Andhra Resins added ₹500 cr of debt and ₹160 cr of non-controlling interest.`);
-  if(pp.port.spv)story.push(`GreenLease brings ₹500 cr of guaranteed debt onto your balance sheet for a 2% stake.`);
-  if(pp.port.volt&&ev.volt<0)story.push(`VoltNest's loss hit your profit through one line: share of loss of associate.`);
-  if(pp.port.pipe)story.push(`The pipeline is a joint operation: your 40% of its assets and costs sits inside your own line items, with no investment line at all.`);
+  if(pp.port.resin)story.push(`Consolidating Godavari Polymers (only 45%, but you control it) added ₹500 cr of debt and ₹${f(R.nci)} cr of non-controlling interest.`);
+  if(pp.port.spv)story.push(`Suryoday Trust brings ₹500 cr of guaranteed debt onto your balance sheet for a 1% stake.`);
+  if(pp.port.volt&&ev.volt<0)story.push(`Nexa Cells' loss hit your profit through one line: share of loss of associate.`);
+  if(pp.port.pipe)story.push(`The Coastal LNG terminal is a joint operation, whatever its name: your 40% of its assets and costs sits inside your own line items, with no investment line at all.`);
   if(R.borr>BORR)story.push(`Borrowings rose from ₹1,500 cr to ₹${f(R.borr)} cr, so debt-to-equity went from 0.38 to ${R.de.toFixed(2)}, without you borrowing a rupee yourself.`);
   app.innerHTML=`<div class="stack">
    <div><p class="eyebrow">Verdict · Team ${esc(S.team)}</p><h2>Manager and analyst, scored.</h2></div>
@@ -794,7 +826,7 @@ function start(data){
   if(hash==="team"&&t&&t.team&&t.session){resumeTeam();return;}
   S={view:"home"};render();
 }
-window.__dd={compute,encodeEv,decodeEv,evVals,makeToken,readToken,DEALS,stageCode};
+window.__dd={compute,compute2,encodeEv,decodeEv,evVals,makeToken,readToken,DEALS,SDEALS,stageCode};
 window.claude?.hot?.snapshot?.(()=>keep());
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
 })();
